@@ -24,8 +24,7 @@ def insertIntoDB(db, item):
     print 'Failed to insert {0} into {1}.'.format(str(item), str(db))
 
 # Parses captions of form: Book_Title, Book_Author (Reader_Sex, Reader_Age, Reader_Description) Book_Url
-def parseCaption(caption):
-  reader_location = 'NY' # TODO: Also crawl SF page, don't hardcode city
+def parseCaption(caption, reader_location='NY'):
   book_author = book_title = book_url = reader_sex = reader_age = reader_description = None
   first_paren = caption.split('(')
   if len(first_paren) > 1:
@@ -64,9 +63,14 @@ def parseCaption(caption):
           return caption_info
 
 def scrapeCoverSpy(database, start_page = 0, end_page = 1, location='NY'):
-  url = cs_url = 'http://coverspy.tumblr.com'
-  # sf_url = "http://coverspysf.tumblr.com/" # For later use
+  ny_url = 'http://coverspy.tumblr.com'
+  sf_url = 'http://coverspysf.tumblr.com'
   page = start_page # page = 0 = homepage; page = 1 = homepage/page/2
+
+  if location == 'NY':
+    url = cs_url = ny_url
+  elif location == 'SF':
+    url = cs_url = sf_url
 
   while page < end_page:
     if page > 0:
@@ -82,7 +86,8 @@ def scrapeCoverSpy(database, start_page = 0, end_page = 1, location='NY'):
 
     # Generate list containing text element from each html caption & then
     # Call parseCaption on each text element in that list
-    caption_dicts = map(parseCaption, [caption.p.text for caption in html_captions])
+    #caption_dicts = map(parseCaption, [caption.p.text for caption in html_captions])
+    caption_dicts = [parseCaption(cap, location) for cap in [caption.p.text for caption in html_captions]]
     filtered_dicts = list(filter(None, caption_dicts)) # Get rid of empties
     # Now throw each successful caption dictionary into Mongo
     [insertIntoDB(database, capt_dict) for capt_dict in filtered_dicts]
@@ -133,7 +138,7 @@ qp = constructQueryParams(age='20s', sex='F')
 #book_dict = retrieveFromDB(coverspy_db, qp)
 
 # Store book information for specified page range
-scrapeCoverSpy(coverspy_db, start_page=397, end_page=402)
+scrapeCoverSpy(coverspy_db, location='SF')
 
 # Print books matching query specified in qp
 #printBookCounts(book_dict)
