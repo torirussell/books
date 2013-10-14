@@ -43,7 +43,7 @@ def parseCaption(caption):
       reader_list = reader_info.split(',')
       if len(reader_list) > 2:
         reader_sex = reader_list[0].strip()
-        reader_age = reader_list[1].strip()
+        reader_age = reader_list[1].strip() # TODO: generalize to decade, not early/late
         reader_description = ','.join(reader_list[2:]).strip()
 
         if book_author and book_title and book_url and reader_sex and reader_age and reader_description and reader_location:
@@ -69,13 +69,16 @@ def scrapeCoverSpy(database, start_page = 0, end_page = 1, location='NY'):
   page = start_page # page = 0 = homepage; page = 1 = homepage/page/2
 
   while page < end_page:
-    if page > 0: # TODO: Discontinue loop if have reached a content-less page
+    if page > 0:
       url = cs_url + '/page/' + str(page + 1)
     
     cover_spy = urlopen(url).read() # Get string form of page
     soup_strainer = SoupStrainer(attrs={'class':'caption'}) # Only grab captions
     soup = BeautifulSoup(cover_spy, parse_only=soup_strainer) # String -> HTML
     html_captions = soup.find_all(attrs={'class':'caption'}) # Generate list of captions
+
+    if len(html_captions) < 1: # Assume that no captions means empty page
+      break # Which means we've reached the end of content; stop processing
 
     # Generate list containing text element from each html caption & then
     # Call parseCaption on each text element in that list
@@ -127,12 +130,13 @@ def printBookCounts(books):
 
 coverspy_db = setUpDB('captions_db') # Consistent DB has all CoverSpy books scraped
 qp = constructQueryParams(age='20s', sex='F')
-book_dict = retrieveFromDB(coverspy_db, qp)
+#book_dict = retrieveFromDB(coverspy_db, qp)
 
 # Store book information for specified page range
-scrapeCoverSpy(coverspy_db, start_page=14, end_page=17)
+scrapeCoverSpy(coverspy_db, start_page=397, end_page=402)
 
 # Print books matching query specified in qp
-printBookCounts(book_dict)
+#printBookCounts(book_dict)
 
+# TODO: update DB values from script
 
